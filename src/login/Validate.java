@@ -31,55 +31,41 @@ public class Validate extends HttpServlet {
 		String p = req.getParameter("pwd");
 		String c = req.getParameter("pwd1");
 		String e = req.getParameter("mail");
-		if (n.equals("")) {
-			System.out.println("Name cant be null");
+		if (n.equals("") || (p.equals("")) || (e.equals(""))) {
+			out.println("<h3><center>Fields cant be empty</center></h3>");
+			req.getRequestDispatcher("SignUp.html").forward(req, res);
+		} else if (!c.equals(p)) {
+			out.println("<h3><center>Enter correct password</center></h3>");
 			req.getRequestDispatcher("SignUp.html").forward(req, res);
 		} else {
-			if (p.equals("")) {
-				System.out.println("Password cant be null");
-				req.getRequestDispatcher("SignUp.html").forward(req, res);
+
+			Entity u = new Entity("User", e);
+			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+			Query q = new Query("User").setFilter(new FilterPredicate("userEmail", FilterOperator.EQUAL, e));
+			PreparedQuery pq = datastore.prepare(q);
+			Entity result = pq.asSingleEntity();
+			if (result == null) {
+				u.setProperty("userName", n);
+				u.setProperty("passWord", p);
+				u.setProperty("userEmail", e);
+
+				datastore.put(u);
+
+				u.getKey().getName();
+				com.google.appengine.api.datastore.Key k = KeyFactory.createKey("User", e);
+
+				HttpSession s = req.getSession();
+				s.setAttribute("user", n);
+
+				out.println("<h3><center>Successfully registered</center></h3>");
+				req.getRequestDispatcher("/Profile").include(req, res);
 			} else {
-				if (!c.equals(p)) {
-					out.println("<h3><center>Enter correct password</center></h3>");
-					req.getRequestDispatcher("SignUp.html").forward(req, res);
-				} else {
-					if (e.equals("")) {
-						System.out.println("Email cant be null");
-						req.getRequestDispatcher("SignUp.html").forward(req, res);
-					}
-
-					else {
-
-						Entity u = new Entity("User", e);
-						DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-						Query q = new Query("User")
-								.setFilter(new FilterPredicate("userEmail", FilterOperator.EQUAL, e));
-						PreparedQuery pq = datastore.prepare(q);
-						Entity result = pq.asSingleEntity();
-						if (result == null) {
-							u.setProperty("userName", n);
-							u.setProperty("passWord", p);
-							u.setProperty("userEmail", e);
-
-							datastore.put(u);
-
-							u.getKey().getName();
-							com.google.appengine.api.datastore.Key k = KeyFactory.createKey("User", e);
-
-							HttpSession s = req.getSession();
-							s.setAttribute("user", n);
-
-							out.println("<h3><center>Successfully registered</center></h3>");
-							req.getRequestDispatcher("/Profile").include(req, res);
-						} else {
-							out.println("<h3><center>Email id is already present. \n </center><h3>");
-							out.println("<h3><center>Please login</center><h3>\n\n");
-							req.getRequestDispatcher("/index.html").forward(req, res);
-						}
-					}
-				}
+				out.println("<h3><center>Email id is already present. \n </center><h3>");
+				out.println("<h3><center>Please login</center><h3>\n\n");
+				req.getRequestDispatcher("/index.html").forward(req, res);
 			}
 		}
+
 		out.close();
 	}
 }
